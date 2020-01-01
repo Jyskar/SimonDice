@@ -4,4 +4,6 @@
     <string name="blueString">BLUE</string>
     <string name="yellowString">YELLOW</string>
     <string name="greenString">GREEN</string>
+    <string name="playString">PLAY</string>
+    <string name="ranking">RANKING</string>
 </resources>
