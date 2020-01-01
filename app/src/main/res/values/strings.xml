@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">SimonDice</string>
+    <string name="redString">RED</string>
+    <string name="blueString">BLUE</string>
+    <string name="yellowString">YELLOW</string>
+    <string name="greenString">GREEN</string>
+</resources>
