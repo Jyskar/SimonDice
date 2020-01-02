@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Integer> sequence = new ArrayList<>();
     private List<Integer> userSequence = new ArrayList<>();
     private final Handler handler = new Handler();
+    private long t0,t1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,20 +100,20 @@ public class MainActivity extends AppCompatActivity {
                 acceptInput = false;
                 openDialog(false);
                 userSequence.clear();
-                sequence.clear();
             } else if (sequence.size() == userSequence.size() && sequence.equals(userSequence)) {
                 acceptInput = false;
                 openDialog(true);
                 userSequence.clear();
-                sequence.clear();
             }
         }
     }
 
     public void openDialog(Boolean win) {
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-
-        alertDialogBuilder.setMessage((win) ? "Great job!" :"Wrong sequence, try again!");
+        t1 = System.currentTimeMillis();
+        long points = (sequence.size()*1000)-((t1-t0)/7);
+        sequence.clear();
+        alertDialogBuilder.setMessage((win) ? "Great job!\n Points: "+points :"Wrong sequence, try again!");
         alertDialogBuilder.setPositiveButton("Ok",
                 new DialogInterface.OnClickListener() {
                     @Override
@@ -168,8 +169,10 @@ public class MainActivity extends AppCompatActivity {
                 blue.setBackgroundColor(getResources().getColor(R.color.colorBlue));
                 break;
         }
-        if (timeEnd == base + increment*(sequence.size()-1))
+        if (timeEnd == base + increment*(sequence.size()-1)) {
             acceptInput = true;
+            t0 = System.currentTimeMillis();
+        }
 
     }
 }
