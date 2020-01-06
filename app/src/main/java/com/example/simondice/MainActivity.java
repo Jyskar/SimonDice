@@ -243,12 +243,13 @@ public class MainActivity extends AppCompatActivity {
         Collections.reverse(rankings);
         if(rankings.size()>5)
             rankings = rankings.subList(0,5);
+
         writeRank();
     }
 
     public void writeRank(){
         try {
-            FileOutputStream outputStream = openFileOutput("ranking", Context.MODE_PRIVATE);
+            FileOutputStream outputStream = this.openFileOutput("ranking", Context.MODE_PRIVATE);
             ObjectOutputStream o = new ObjectOutputStream(outputStream);
             o.writeObject(rankings);
             outputStream.close();
@@ -261,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
         List<Ranking> total = new ArrayList<>();
         try {
             String filename = "ranking";
-            FileInputStream inputStream = openFileInput(filename);
+            FileInputStream inputStream = this.openFileInput(filename);
             ObjectInputStream i = new ObjectInputStream(inputStream);
             rankings =(List<Ranking>) i.readObject();
             i.close();
@@ -294,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
         final String[] levels = {"1","2","3"};
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder.setTitle("Select Difficulty");
-        alertDialogBuilder.setSingleChoiceItems(levels, difficulty, new DialogInterface.OnClickListener() {
+        alertDialogBuilder.setSingleChoiceItems(levels, difficulty-1, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 difficulty=Integer.parseInt(levels[i]);
