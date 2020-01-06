@@ -6,4 +6,7 @@
     <string name="greenString">GREEN</string>
     <string name="playString">PLAY</string>
     <string name="ranking">RANKING</string>
+    <string name="returnString">GO BACK</string>
+    <string name="goString">GO!</string>
+    <string name="setDificulty">LEVEL</string>
 </resources>

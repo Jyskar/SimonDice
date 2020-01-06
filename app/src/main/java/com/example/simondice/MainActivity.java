@@ -3,13 +3,31 @@ package com.example.simondice;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.renderscript.ScriptGroup;
+import android.text.InputFilter;
+import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -22,12 +40,13 @@ public class MainActivity extends AppCompatActivity {
     private List<Integer> userSequence = new ArrayList<>();
     private final Handler handler = new Handler();
     private long t0,t1;
-
+    public static List<Ranking> rankings = new ArrayList<>();
+    private int difficulty = 1;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        rankings = readRankings();
 
     }
 
@@ -35,7 +54,9 @@ public class MainActivity extends AppCompatActivity {
         sequence.clear();
         userSequence.clear();
         acceptInput = false;
-        playSequence((int) (Math.random() * ((6 - 3) + 1)) + 3);
+        //set desired number of elements
+        int length = (difficulty*4);
+        playSequence(length);
     }
 
     private void playSequence(int length) {
@@ -73,6 +94,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void buttonOnClick(View view) {
         if (acceptInput) {
+            if(userSequence.isEmpty())
+                t0 = System.currentTimeMillis();
+
             int input=0;
             switch (view.getId()) {
                 case R.id.greenButton:
@@ -111,18 +135,47 @@ public class MainActivity extends AppCompatActivity {
     public void openDialog(Boolean win) {
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         t1 = System.currentTimeMillis();
-        long points = (sequence.size()*1000)-((t1-t0)/7);
+        final long points = (sequence.size()*1000)-((t1-t0)/7);
         sequence.clear();
-        alertDialogBuilder.setMessage((win) ? "Great job!\n Points: "+points :"Wrong sequence, try again!");
-        alertDialogBuilder.setPositiveButton("Ok",
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        arg0.cancel();
-                    }
-                });
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
+        if(win) {
+            final boolean topFive = entersRanking(points);
+            final EditText input = new EditText(this);
+            alertDialogBuilder.setMessage(!topFive ? "Great job!\n Got "+points+" points!"
+                    : "Great job!\n Got "+points+" points!"+"\nInsert name for the rankings:(6 char max)" );
+            if(topFive) {
+                input.setInputType(InputType.TYPE_CLASS_TEXT);
+                input.setHint("Name");
+                InputFilter[] filterArray = new InputFilter[1];
+                filterArray[0] = new InputFilter.LengthFilter(6);
+                input.setFilters(filterArray);
+                alertDialogBuilder.setView(input);
+            }
+            alertDialogBuilder.setPositiveButton("Ok",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface arg0, int arg1) {
+                            if(topFive) {
+                                String name = input.getText().toString();
+                                updateRanking(new Ranking((name.length()>5)? name.substring(0,5).toUpperCase():name.toUpperCase()
+                                        , points));
+                            }
+                            arg0.cancel();
+                        }
+                    });
+            AlertDialog alertDialog = alertDialogBuilder.create();
+            alertDialog.show();
+        }else{
+            alertDialogBuilder.setMessage("Wrong, try again." );
+            alertDialogBuilder.setPositiveButton("Ok",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface arg0, int arg1) {
+                            arg0.cancel();
+                        }
+                    });
+            AlertDialog alertDialog = alertDialogBuilder.create();
+            alertDialog.show();
+        }
     }
 
     public void changeColorBright(int num) {
@@ -171,8 +224,88 @@ public class MainActivity extends AppCompatActivity {
         }
         if (timeEnd == base + increment*(sequence.size()-1)) {
             acceptInput = true;
-            t0 = System.currentTimeMillis();
+            final TextView go = findViewById(R.id.goText);
+            go.setVisibility(View.VISIBLE);
+            go.bringToFront();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    go.setVisibility(View.GONE);
+                }
+            }, 500);
         }
 
+    }
+
+    public void updateRanking(Ranking rank){
+        rankings.add(rank);
+        Collections.sort(rankings);
+        Collections.reverse(rankings);
+        if(rankings.size()>5)
+            rankings = rankings.subList(0,5);
+        writeRank();
+    }
+
+    public void writeRank(){
+        try {
+            FileOutputStream outputStream = openFileOutput("ranking", Context.MODE_PRIVATE);
+            ObjectOutputStream o = new ObjectOutputStream(outputStream);
+            o.writeObject(rankings);
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Ranking> readRankings(){
+        List<Ranking> total = new ArrayList<>();
+        try {
+            String filename = "ranking";
+            FileInputStream inputStream = openFileInput(filename);
+            ObjectInputStream i = new ObjectInputStream(inputStream);
+            rankings =(List<Ranking>) i.readObject();
+            i.close();
+            inputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return total;
+    }
+    public boolean entersRanking(long points){
+        if(null!=rankings && !rankings.isEmpty() && rankings.size()>=5 ){
+            for(Ranking r: rankings) {
+                if (r.getPoints() < points) {
+                    return true;
+                }
+            }
+        }else{
+            return true;
+        }
+        return false;
+    }
+
+    public void onClickRankings(View view){
+        Intent intent = new Intent(MainActivity.this,RankingActivity.class);
+        startActivity(intent);
+    }
+
+
+    public void onClickDificulty(View view){
+        final String[] levels = {"1","2","3"};
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setTitle("Select Difficulty");
+        alertDialogBuilder.setSingleChoiceItems(levels, difficulty, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                difficulty=Integer.parseInt(levels[i]);
+            }
+        });
+        alertDialogBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.cancel();
+            }
+        });
+        alertDialogBuilder.show();
     }
 }

@@ -23,4 +23,14 @@
     <color name="brightGreen">#5BFF5E</color>
     <color name="brightYellow">#FFE655</color>
 
+    <color name="firstPlace">#FFD900</color>
+    <color name="secondPlace">#B1B0AC</color>
+    <color name="thirdPlace">#643003</color>
+    <color name="restPlace">#FDFDFD</color>
+    <color name="bgfirstPlace">#45FFE600</color>
+    <color name="bgsecondPlace">#41B1B0AC</color>
+    <color name="bgthirdPlace">#45643003</color>
+    <color name="bgrestPlace">#FDFDFD</color>
+
+
 </resources>
