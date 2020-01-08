@@ -249,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void writeRank(){
         try {
-            FileOutputStream outputStream = this.openFileOutput("ranking", Context.MODE_PRIVATE);
+            FileOutputStream outputStream = new FileOutputStream("ranking");
             ObjectOutputStream o = new ObjectOutputStream(outputStream);
             o.writeObject(rankings);
             outputStream.close();
@@ -262,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
         List<Ranking> total = new ArrayList<>();
         try {
             String filename = "ranking";
-            FileInputStream inputStream = this.openFileInput(filename);
+            FileInputStream inputStream = new FileInputStream(filename);
             ObjectInputStream i = new ObjectInputStream(inputStream);
             rankings =(List<Ranking>) i.readObject();
             i.close();
