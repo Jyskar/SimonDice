@@ -3,9 +3,11 @@ package com.example.simondice;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.renderscript.ScriptGroup;
@@ -17,6 +19,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,6 +38,9 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
 
+    //Setting
+    private boolean bluetooth;
+    //params
     private int increment = 1000;
     private int base = 500;
     private boolean acceptInput = false;
@@ -40,14 +48,26 @@ public class MainActivity extends AppCompatActivity {
     private List<Integer> userSequence = new ArrayList<>();
     private final Handler handler = new Handler();
     private long t0,t1;
+    private SharedPreferences mPrefs;
+    private SharedPreferences.Editor prefsEditor;
     public static List<Ranking> rankings = new ArrayList<>();
     private int difficulty = 1;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        rankings = readRankings();
+        mPrefs = getPreferences(MODE_PRIVATE);
+        prefsEditor = mPrefs.edit();
 
+        rankings = readRankings();
+        //check bluetooth support
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        bluetooth = (bluetoothAdapter != null);
+        //is bluetooth enabled?
+        if (bluetooth && !bluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, 10);
+        }
     }
 
     public void playOnClick(View view) {
@@ -248,30 +268,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void writeRank(){
-        try {
-            FileOutputStream outputStream = new FileOutputStream("ranking");
-            ObjectOutputStream o = new ObjectOutputStream(outputStream);
-            o.writeObject(rankings);
-            outputStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Gson gson = new Gson();
+        String json = gson.toJson(rankings);
+        prefsEditor.putString("ranking", json);
+        prefsEditor.commit();
     }
 
     public List<Ranking> readRankings(){
-        List<Ranking> total = new ArrayList<>();
-        try {
-            String filename = "ranking";
-            FileInputStream inputStream = new FileInputStream(filename);
-            ObjectInputStream i = new ObjectInputStream(inputStream);
-            rankings =(List<Ranking>) i.readObject();
-            i.close();
-            inputStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return total;
+        List<Ranking> total;
+        Gson gson = new Gson();
+        String json = mPrefs.getString("ranking", "");
+        total = gson.fromJson(json, new TypeToken<List<Ranking>>() {
+        }.getType());
+        return (null != total) ? total : new ArrayList<Ranking>();
     }
+
     public boolean entersRanking(long points){
         if(null!=rankings && !rankings.isEmpty() && rankings.size()>=5 ){
             for(Ranking r: rankings) {
