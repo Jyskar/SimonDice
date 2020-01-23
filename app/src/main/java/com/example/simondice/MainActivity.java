@@ -4,6 +4,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -12,6 +14,7 @@ import android.content.res.Resources;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelUuid;
 import android.renderscript.ScriptGroup;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -22,6 +25,14 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+/*
+import com.google.gson.Gson;
+
+import com.google.gson.reflect.TypeToken;
+
+
+ */
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -30,12 +41,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -62,6 +77,10 @@ public class MainActivity extends AppCompatActivity {
     public static List<Ranking> rankings = new ArrayList<>();
     private int difficulty = 1;
 
+    // Bluetooth
+    private OutputStream outputStream;
+    private InputStream inStream;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +89,11 @@ public class MainActivity extends AppCompatActivity {
         prefsEditor = mPrefs.edit();
         initializeAudioIds();
         rankings = readRankings();
+        try {
+            init(); write("HOLA");
+        }  catch (Exception e) {
+
+        }
 
         //check bluetooth support
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -81,6 +105,53 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(enableBtIntent, 10);
         }
     }
+
+    private void init() throws IOException {
+        BluetoothAdapter blueAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (blueAdapter != null) {
+            if (blueAdapter.isEnabled()) {
+                Set<BluetoothDevice> bondedDevices = blueAdapter.getBondedDevices();
+
+                if(bondedDevices.size() > 0) {
+                    Object[] devices = (Object []) bondedDevices.toArray();
+                    BluetoothDevice device = (BluetoothDevice) devices[3];
+                    System.out.println("DEVICE: " + device.toString());
+                    ParcelUuid[] uuids = device.getUuids();
+                    for (ParcelUuid u : uuids) {
+                       System.out.println("UUID: "+ u.getUuid());
+                    }
+                    BluetoothSocket socket = device.createRfcommSocketToServiceRecord(uuids[0].getUuid());
+                    socket.connect();
+                    outputStream = socket.getOutputStream();
+                    inStream = socket.getInputStream();
+                }
+
+                Log.e("error", "No appropriate paired devices.");
+            } else {
+                Log.e("error", "Bluetooth is disabled.");
+            }
+        }
+    }
+
+    public void write(String s) throws IOException {
+        outputStream.write(s.getBytes());
+    }
+/*
+    public void run() {
+        final int BUFFER_SIZE = 1024;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int bytes = 0;
+        int b = BUFFER_SIZE;
+
+        while (true) {
+            try {
+                // bytes = inStream.read(buffer, bytes, BUFFER_SIZE - bytes);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }*/
 
     public void playOnClick(View view) {
         sequence.clear();
@@ -224,15 +295,35 @@ public class MainActivity extends AppCompatActivity {
         switch (num) {
             case 1:
                 green.setBackgroundColor(getResources().getColor(R.color.brightGreen));
+                try {
+                    write("0");
+                } catch (Exception e) {
+
+                }
                 break;
             case 2:
                 yellow.setBackgroundColor(getResources().getColor(R.color.brightYellow));
+                try {
+                    write("1");
+                } catch (Exception e) {
+
+                }
                 break;
             case 3:
                 red.setBackgroundColor(getResources().getColor(R.color.brightRed));
+                try {
+                    write("2");
+                } catch (Exception e) {
+
+                }
                 break;
             case 4:
                 blue.setBackgroundColor(getResources().getColor(R.color.brightBlue));
+                try {
+                    write("3");
+                } catch (Exception e) {
+
+                }
                 break;
         }
 
